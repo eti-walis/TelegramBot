@@ -2,7 +2,6 @@ import random
 from flask import Flask, Response, request
 import requests
 import api
-import pandas as pd
 
 items = ["dress", "skirt", "jackets", "shoes"]
 colors = ["black", "white", "pink", "blue", "yellow", "green", "red", "purple", "orange"]
@@ -10,9 +9,10 @@ size = ["xs", "s", "m", "l", "xl"]
 
 order = [0, 0, 0]
 orders_dic = {}
+people_dic = {}
 
 TOKEN = "1959475327:AAFMUkOCTeqGBbBTR8AJN3gawaOHsgDaCmQ"
-TELEGRAM_INIT_WEBHOOK_UR = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://fd36deadcb95.ngrok.io/message"
+TELEGRAM_INIT_WEBHOOK_UR = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://f1794e5066d7.ngrok.io/message"
 requests.get(TELEGRAM_INIT_WEBHOOK_UR)
 app = Flask(__name__)
 random.seed()
@@ -29,14 +29,6 @@ def init():
             orders_dic[order] += 1
         else:
             orders_dic[order] = 1
-    d = {'order': [], 'times': []}
-    for k, v in orders_dic.items():
-        d['order'].append(k)
-        d['times'].append(v)
-
-    new = pd.DataFrame(d)
-    new.to_csv("shoppingBotReaserch.csv", index=False)
-
 
 # return the most popular searches
 def get_popular(dic, k=5):
@@ -70,6 +62,15 @@ def get_url(order):
     return kLinks[0] + "\n" + kLinks[1] + "\n" + kLinks[2] + "\n" + kLinks[3] + "\n" + kLinks[4]
 
 
+def rec(id, order):
+    if id in people_dic:
+        people_dic[id].appened(order)
+    else:
+        people_dic[id] = [order]
+
+
+
+
 # Bot
 @app.route("/message", methods=["POST"])
 def handle_message() -> Response:
@@ -78,10 +79,10 @@ def handle_message() -> Response:
     :return: response
     """
     commend = request.get_json()["message"]["text"]
+    chat_id = request.get_json()["message"]["chat"]["id"]
 
     if commend == "/start":
-        txt = "Welcome to the shopping bot, please enter category from: dress, skirt, jackets, shoes, or type popular " \
-              "to get the most popular searches "
+        txt = "Welcome to the shopping bot."+'\n'+"please enter category, or type popular to get the most popular searches "
     elif str(commend).lower() in items:
         order[0] = str(commend)
         txt = "choose color"
@@ -92,6 +93,7 @@ def handle_message() -> Response:
         txt = "choose size"
     elif str(commend).lower() in size:
         order[2] = str(commend)
+        rec(chat_id, order)
         txt = get_url(order)
     elif str(commend).lower() == "popular":
         txt = get_popular(orders_dic)
@@ -99,10 +101,11 @@ def handle_message() -> Response:
         txt = "try again"
         # print(orders_dic)
     chat_id = request.get_json()["message"]["chat"]["id"]
+    print(chat_id)
     requests.get(f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={chat_id}&text={txt}")
     return Response("Success")
 
 
 if __name__ == '__main__':
     init()
-    #app.run(port=7002)
+    app.run(port=7002)

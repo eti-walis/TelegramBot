@@ -3,7 +3,7 @@ import requests
 
 def get_links(category:str, color: str, size:str):
     url = "https://apidojo-forever21-v1.p.rapidapi.com/products/search"
-    print(category, "  ", type(category))
+    #print(category, "  ", type(category))
     querystring = {"query": category, "rows": "5", "start": "0", "color_groups": color, "sizes": size}
 
     headers = {
